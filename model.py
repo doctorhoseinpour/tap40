@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Set, Callable
 from datetime import datetime, timedelta
 from functools import reduce
+import logging
 
 
 class Action:
@@ -112,11 +113,12 @@ class Driver:
         self.check_for_completed_mission()
 
     def check_for_completed_mission(self):
-        for mission in self.active_missions:
-            if mission.has_met_expectations(list(filter(lambda x: x.created_at >= mission.from_time and
-                                                                  x.finished_at <= mission.deadline,
-                                                        self.action_history))):
-                mission.mission_completed(self)
+        for mis in self.active_missions:
+            if mis.has_met_expectations(
+                    list(filter(lambda x: x.created_at >= mis.from_time and x.finished_at <= mis.deadline,
+                                self.action_history))):
+                mis.mission_completed(self)
+                logging.info(f'missions {mis.mission_id} has been completed by driver: {self.name}')
 
 
 class Mission:
@@ -153,16 +155,21 @@ class Mission:
         return self.expectations(actions)
 
 
-awards = [CashAward('hizen', datetime.now(), 10000.0)]
+the_awards = [CashAward('award_name_woe', datetime.now(), 10000.0)]
 
 
-def mission_expectation(actions: List[Action]):
+def mission_expectation(actions: List[Action]) -> bool:
     # checks if income from the actions is greater than 100000.0 T
-    return reduce(lambda x, a: a + x.price, map(lambda x: x.price, actions)) > 100000.0
+    return reduce(lambda x, a: a + x.price, map(lambda x: x.price, actions)) >= 100000.0
 
 
-mission = Mission(
-    '1234', 'asghar', 'asghar moo nadare', awards, from_time=datetime.now(),
+def counting_expectation(actions: List[Action]) -> bool:
+    # checks if has done 10 or more Driving actions
+    return len([i for i in actions if isinstance(i, DrivingAction)]) >= 10
+
+
+the_mission = Mission(
+    '1234', 'asghar', 'asghar kachale why why', the_awards, from_time=datetime.now(),
     deadline=datetime.now() + timedelta(days=1),
     expectations=mission_expectation
 )
